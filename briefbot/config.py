@@ -1,22 +1,37 @@
-"""Global OpenAI SDK configuration for briefbot."""
+"""OpenAI client configuration for briefbot.
+
+The OpenAI Python SDK v1+ no longer uses module-level globals like
+`openai.api_key` / `openai.api_base`. Instead, callers instantiate a client.
+
+This module centralizes that instantiation so the rest of the codebase can
+depend on a small helper.
+"""
+
+from __future__ import annotations
 
 import os
 
-import openai
-
-# getattr keeps this module importable even if the installed SDK no longer
-# exposes api_base; the failure then surfaces at the call sites that use it.
-_DEFAULT_API_BASE = getattr(openai, "api_base", None)
+from openai import OpenAI
 
 
-def configure():
-    """Configure the OpenAI SDK from the environment.
+def configure() -> None:
+    """Backwards-compatible no-op.
 
-    OPENAI_API_KEY is required. OPENAI_API_BASE optionally points the SDK at a
-    different API host (used by the offline test suite); when absent, the SDK
-    default is restored so reconfiguration never leaves a stale endpoint.
+    The v0.x SDK used global configuration (e.g. `openai.api_key`). The v1+ SDK
+    configures per-client instance, so callers should prefer `get_client()`.
+
+    Tests in this repository call `configure()` as a setup hook after setting
+    environment variables; keeping this function preserves that intent.
     """
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    api_base = os.environ.get("OPENAI_API_BASE", _DEFAULT_API_BASE)
-    if api_base is not None:
-        openai.api_base = api_base
+
+
+def get_client() -> OpenAI:
+    """Create an OpenAI client from environment variables.
+
+    - OPENAI_API_KEY is required.
+    - OPENAI_API_BASE is optional and is used by the offline test suite to
+      point the client at the local stub server.
+    """
+    api_key = os.environ["OPENAI_API_KEY"]
+    base_url = os.environ.get("OPENAI_API_BASE")
+    return OpenAI(api_key=api_key, base_url=base_url)

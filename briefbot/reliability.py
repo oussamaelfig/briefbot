@@ -2,13 +2,14 @@
 
 import time
 
-import openai.error
+import openai
 
 TRANSIENT_ERRORS = (
-    openai.error.RateLimitError,
-    openai.error.APIError,
-    openai.error.Timeout,
-    openai.error.APIConnectionError,
+    openai.RateLimitError,
+    openai.APIError,
+    openai.APITimeoutError,
+    openai.APIConnectionError,
+    openai.InternalServerError,
 )
 
 
@@ -22,6 +23,7 @@ def call_with_retry(fn, *args, **kwargs):
     Retries up to `retries` times (keyword-only, default 3) with a small
     linear backoff, then raises UpstreamError.
     """
+
     retries = kwargs.pop("retries", 3)
     backoff_seconds = kwargs.pop("backoff_seconds", 0.05)
     last_error = None

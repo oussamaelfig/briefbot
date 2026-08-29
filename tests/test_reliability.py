@@ -22,21 +22,22 @@ def test_persistent_failure_raises_upstream_error(stub):
 def test_transport_errors_are_retried(stub):
     # Regression test for a review finding: connection/timeout failures must
     # follow the same retry policy as HTTP-level API errors.
-    import openai.error
+    import openai
+    import httpx2
 
     attempts = {"count": 0}
 
     def flaky_transport():
         attempts["count"] += 1
         if attempts["count"] < 3:
-            raise openai.error.APIConnectionError("connection dropped")
+            raise openai.APIConnectionError(message="connection dropped", request=httpx2.Request("GET", "http://example"))
         return "recovered"
 
     assert reliability.call_with_retry(flaky_transport, retries=3, backoff_seconds=0) == "recovered"
     assert attempts["count"] == 3
 
     def always_times_out():
-        raise openai.error.Timeout("deadline exceeded")
+        raise openai.APITimeoutError(request=httpx2.Request("GET", "http://example"))
 
     with pytest.raises(reliability.UpstreamError):
         reliability.call_with_retry(always_times_out, retries=2, backoff_seconds=0)

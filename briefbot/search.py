@@ -2,15 +2,16 @@
 
 import math
 
-import openai
+from briefbot.config import get_client
 
 EMBEDDING_MODEL = "text-embedding-ada-002"
 
 
 def embed_texts(texts):
     """Embed a list of texts; returns one vector per input, in order."""
-    response = openai.Embedding.create(model=EMBEDDING_MODEL, input=texts)
-    return [item["embedding"] for item in response["data"]]
+    client = get_client()
+    response = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
+    return [item.embedding for item in response.data]
 
 
 def _cosine(a, b):
