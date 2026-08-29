@@ -1,6 +1,6 @@
 """Meeting-notes summarization."""
 
-import openai
+from briefbot.config import get_client
 
 SYSTEM_PROMPT = (
     "You are a meeting-notes assistant. Summarize the notes into decisions and "
@@ -12,7 +12,9 @@ MODEL = "gpt-4o-mini"
 
 def summarize_notes(notes):
     """Summarize raw meeting notes into decisions and action items."""
-    response = openai.ChatCompletion.create(
+
+    client = get_client()
+    completion = client.chat.completions.create(
         model=MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -20,4 +22,4 @@ def summarize_notes(notes):
         ],
         temperature=0.2,
     )
-    return response["choices"][0]["message"]["content"].strip()
+    return completion.choices[0].message.content.strip()
