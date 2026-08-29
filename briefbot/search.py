@@ -2,17 +2,15 @@
 
 import math
 
-from briefbot.config import get_client
+import openai
 
 EMBEDDING_MODEL = "text-embedding-ada-002"
 
 
 def embed_texts(texts):
     """Embed a list of texts; returns one vector per input, in order."""
-
-    client = get_client()
-    response = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
-    return [item.embedding for item in response.data]
+    response = openai.Embedding.create(model=EMBEDDING_MODEL, input=texts)
+    return [item["embedding"] for item in response["data"]]
 
 
 def _cosine(a, b):
@@ -26,7 +24,6 @@ def _cosine(a, b):
 
 def find_related(query, corpus):
     """Return the index of the corpus document most similar to the query."""
-
     if not corpus:
         raise ValueError("corpus must not be empty")
     vectors = embed_texts([query] + list(corpus))

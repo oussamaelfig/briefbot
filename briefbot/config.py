@@ -1,38 +1,22 @@
-"""OpenAI client configuration for briefbot.
-
-The OpenAI Python SDK v1+ prefers instantiating a client instead of configuring
-module globals.
-
-The test suite expects a `configure()` function that reads environment variables
-and prepares the SDK for subsequent calls. In v1+, we implement this by creating
-and caching a client instance.
-"""
-
-from __future__ import annotations
+"""Global OpenAI SDK configuration for briefbot."""
 
 import os
-from typing import Optional
 
-from openai import OpenAI
+import openai
 
-_CLIENT: Optional[OpenAI] = None
-
-
-def configure() -> None:
-    """Initialize the cached client from environment variables."""
-
-    global _CLIENT
-    _CLIENT = OpenAI(
-        api_key=os.environ["OPENAI_API_KEY"],
-        base_url=os.environ.get("OPENAI_API_BASE"),
-    )
+# getattr keeps this module importable even if the installed SDK no longer
+# exposes api_base; the failure then surfaces at the call sites that use it.
+_DEFAULT_API_BASE = getattr(openai, "api_base", None)
 
 
-def get_client() -> OpenAI:
-    """Return the cached client, creating it from env vars if needed."""
+def configure():
+    """Configure the OpenAI SDK from the environment.
 
-    global _CLIENT
-    if _CLIENT is None:
-        configure()
-    assert _CLIENT is not None
-    return _CLIENT
+    OPENAI_API_KEY is required. OPENAI_API_BASE optionally points the SDK at a
+    different API host (used by the offline test suite); when absent, the SDK
+    default is restored so reconfiguration never leaves a stale endpoint.
+    """
+    openai.api_key = os.environ["OPENAI_API_KEY"]
+    api_base = os.environ.get("OPENAI_API_BASE", _DEFAULT_API_BASE)
+    if api_base is not None:
+        openai.api_base = api_base
